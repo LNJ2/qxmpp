@@ -27,6 +27,8 @@
 
 #include "QXmppStanza.h"
 
+
+#include <QStringView>
 #if QXMPP_DEPRECATED_SINCE(1, 1)
 #include <QPair>
 #endif
@@ -36,6 +38,7 @@
 class QMimeType;
 class QUrl;
 
+class QXmppDataFormBased;
 class QXmppDataFormPrivate;
 class QXmppDataFormFieldPrivate;
 class QXmppDataFormMediaPrivate;
@@ -216,6 +219,7 @@ public:
                   const QList<Field> &fields,
                   const QString &title = {},
                   const QString &instructions = {});
+    QXmppDataForm(const QXmppDataFormBased &based);
     QXmppDataForm(const QXmppDataForm &other);
     ~QXmppDataForm();
 

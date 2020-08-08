@@ -25,6 +25,7 @@
 #include "QXmppDataForm.h"
 
 #include "QXmppConstants_p.h"
+#include "QXmppDataFormBased.h"
 #include "QXmppUtils.h"
 
 #include <QDebug>
@@ -571,6 +572,16 @@ QXmppDataForm::QXmppDataForm(QXmppDataForm::Type type,
     d->fields = fields;
     d->title = title;
     d->instructions = instructions;
+}
+
+///
+/// Constructs a data form from any type based on QXmppDataFormBased.
+///
+/// \since QXmpp 1.4
+///
+QXmppDataForm::QXmppDataForm(const QXmppDataFormBased &based)
+{
+    *this = based.toDataForm();
 }
 
 /// Constructs a copy of \a other.
