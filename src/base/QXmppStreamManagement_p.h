@@ -31,6 +31,7 @@
 #include <QXmlStreamWriter>
 
 class QXmppStream;
+class QXmppPacket;
 
 //
 //  W A R N I N G
@@ -202,12 +203,14 @@ class QXmppStreamManager
 {
 public:
     explicit QXmppStreamManager(QXmppStream *stream);
+    ~QXmppStreamManager();
 
+    bool enabled() const;
     unsigned int lastIncomingSequenceNumber() const;
 
     void handleDisconnect();
     void handleStart();
-    void handlePacketSent(const QXmppStanza &packet, const QByteArray &data);
+    void handlePacketSent(QXmppPacket &packet);
     bool handleStanza(const QDomElement &stanza);
 
     void resetCache();
@@ -223,7 +226,7 @@ private:
     QXmppStream *stream;
 
     bool m_enabled = false;
-    QMap<unsigned int, QByteArray> m_unacknowledgedStanzas;
+    QMap<unsigned int, QXmppPacket> m_unacknowledgedStanzas;
     unsigned int m_lastOutgoingSequenceNumber = 0;
     unsigned int m_lastIncomingSequenceNumber = 0;
 };

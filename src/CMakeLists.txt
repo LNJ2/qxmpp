@@ -124,6 +124,7 @@ set(SOURCE_FILES
     base/QXmppMixItem.cpp
     base/QXmppMucIq.cpp
     base/QXmppNonSASLAuth.cpp
+    base/QXmppPacket.cpp
     base/QXmppPingIq.cpp
     base/QXmppPresence.cpp
     base/QXmppPubSubIq.cpp
