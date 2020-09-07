@@ -92,6 +92,54 @@ protected:
     virtual QList<FieldDescriptor> fieldDescriptors() const;
     virtual void parseForm(const QXmppDataForm &);
     virtual void serializeForm(QXmppDataForm &) const;
+
+    static void parseString(const QXmppDataForm::Field &field, QString &value)
+    {
+        value = field.value().toString();
+    }
+    static void serializeString(QXmppDataForm::Field &field, const QString &value)
+    {
+        if (!value.isNull()) {
+            field.setValue(value);
+        }
+    }
+
+    static void parseStringList(const QXmppDataForm::Field &field, QStringList &value)
+    {
+        value = field.value().toStringList();
+    }
+    static void serializeStringList(QXmppDataForm::Field &field, const QStringList &value)
+    {
+        if (!value.isEmpty()) {
+            field.setValue(value);
+        }
+    }
+
+    static void parseOptionalBool(const QXmppDataForm::Field &field, std::optional<bool> &value)
+    {
+        value = field.value().toBool();
+    }
+    static void serializeOptionalBool(QXmppDataForm::Field &field, std::optional<bool> value)
+    {
+        if (value.has_value()) {
+            field.setValue(*value);
+        }
+    }
+
+    static void parseOptionalUInt(const QXmppDataForm::Field &field, std::optional<quint32> &value)
+    {
+        bool ok;
+        value = field.value().toString().toInt(&ok);
+        if (!ok) {
+            value = std::nullopt;
+        }
+    }
+    static void serializeOptionalUInt(QXmppDataForm::Field &field, std::optional<quint32> value)
+    {
+        if (value.has_value()) {
+            field.setValue(QString::number(*value));
+        }
+    }
 };
 
 #endif // QXMPPDATAFORMBASED_H
