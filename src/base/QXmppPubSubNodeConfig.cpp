@@ -24,6 +24,7 @@
 #include "QXmppPubSubNodeConfig.h"
 
 static const auto NODE_CONFIG_FORM_TYPE = QStringLiteral("http://jabber.org/protocol/pubsub#node_config");
+static const auto PUBLISH_OPTIONS_FORM_TYPE = QStringLiteral("http://jabber.org/protocol/pubsub#publish-options");
 
 class QXmppPubSubNodeConfigPrivate : public QSharedData
 {
@@ -797,4 +798,21 @@ QList<QXmppDataFormBased::FieldDescriptor> QXmppPubSubNodeConfig::fieldDescripto
 QString QXmppPubSubNodeConfig::formType() const
 {
     return NODE_CONFIG_FORM_TYPE;
+}
+
+std::optional<QXmppPubSubPublishOptions> QXmppPubSubPublishOptions::fromDataForm(const QXmppDataForm &form)
+{
+    if (form.formType() != PUBLISH_OPTIONS_FORM_TYPE)
+        return std::nullopt;
+
+    QXmppPubSubPublishOptions publishOptions;
+    if (!QXmppDataFormBased::fromDataForm(form, publishOptions))
+        return std::nullopt;
+
+    return publishOptions;
+}
+
+QString QXmppPubSubPublishOptions::formType() const
+{
+    return PUBLISH_OPTIONS_FORM_TYPE;
 }
