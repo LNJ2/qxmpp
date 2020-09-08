@@ -38,6 +38,7 @@
 #include "QXmppVCardManager.h"
 #include "QXmppVersionManager.h"
 
+#include <QFuture>
 #include <QSslSocket>
 #include <QTimer>
 
@@ -289,6 +290,15 @@ void QXmppClient::connectToServer(const QString& jid, const QString& password)
 bool QXmppClient::sendPacket(const QXmppStanza& packet)
 {
     return d->stream->sendPacket(packet);
+}
+
+///
+/// \brief QXmppClient::sendPacketAsync
+/// \return
+///
+QFuture<QXmpp::PacketState> QXmppClient::sendPacketAsync(const QXmppStanza& stanza)
+{
+    return d->stream->sendPacketAsync(stanza);
 }
 
 /// Disconnects the client and the current presence of client changes to
