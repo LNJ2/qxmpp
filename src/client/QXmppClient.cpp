@@ -38,6 +38,7 @@
 #include "QXmppVCardManager.h"
 #include "QXmppVersionManager.h"
 
+#include <QDomElement>
 #include <QFuture>
 #include <QSslSocket>
 #include <QTimer>
@@ -299,6 +300,14 @@ bool QXmppClient::sendPacket(const QXmppStanza& packet)
 QFuture<QXmpp::PacketState> QXmppClient::sendPacketAsync(const QXmppStanza& stanza)
 {
     return d->stream->sendPacketAsync(stanza);
+}
+
+///
+/// Sends an IQ packet and returns the response asynchronously.
+///
+QFuture<QXmppClient::IqResult> QXmppClient::sendIq(const QXmppIq &iq)
+{
+    return d->stream->sendIq(iq);
 }
 
 /// Disconnects the client and the current presence of client changes to
