@@ -30,12 +30,14 @@
 
 #include <QDateTime>
 #include <QDomElement>
+#include <QFutureWatcher>
 
+///
 /// Request the time from an XMPP entity.
 ///
 /// \param jid
-
-QString QXmppEntityTimeManager::requestTime(const QString& jid)
+///
+QString QXmppEntityTimeManager::requestTime(const QString &jid)
 {
     QXmppEntityTimeIq request;
     request.setType(QXmppIq::Get);
@@ -46,13 +48,43 @@ QString QXmppEntityTimeManager::requestTime(const QString& jid)
         return QString();
 }
 
+QFuture<QXmppEntityTimeManager::EntityTimeResult> QXmppEntityTimeManager::requestEntityTime(const QString &jid)
+{
+    QXmppEntityTimeIq iq;
+    iq.setType(QXmppIq::Get);
+    iq.setTo(jid);
+    auto iqFuture = client()->sendIq(iq);
+
+    auto futureInterface = QSharedPointer<QFutureInterface<QXmppEntityTimeManager::EntityTimeResult>>(new QFutureInterface<QXmppEntityTimeManager::EntityTimeResult>());
+    futureInterface->reportStarted();
+
+    auto *watcher = new QFutureWatcher<QXmppClient::IqResult>();
+    connect(watcher, &QFutureWatcher<QXmppClient::IqResult>::finished, [=]() {
+        const auto result = iqFuture.resultAt(iqFuture.resultCount() - 1);
+        if (const auto *element = std::get_if<QDomElement>(&result)) {
+            QXmppEntityTimeIq resultIq;
+            resultIq.parse(*element);
+
+            futureInterface->reportResult(resultIq);
+        } else if (const auto *packetError = std::get_if<QXmpp::PacketState>(&result)) {
+            futureInterface->reportResult(*packetError);
+        }
+
+        futureInterface->reportFinished();
+        watcher->deleteLater();
+    });
+    watcher->setFuture(iqFuture);
+
+    return futureInterface->future();
+}
+
 /// \cond
 QStringList QXmppEntityTimeManager::discoveryFeatures() const
 {
     return QStringList() << ns_entity_time;
 }
 
-bool QXmppEntityTimeManager::handleStanza(const QDomElement& element)
+bool QXmppEntityTimeManager::handleStanza(const QDomElement &element)
 {
     if (element.tagName() == "iq" && QXmppEntityTimeIq::isEntityTimeIq(element)) {
         QXmppEntityTimeIq entityTime;
