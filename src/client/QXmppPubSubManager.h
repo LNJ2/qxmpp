@@ -24,102 +24,222 @@
 #ifndef QXMPPPUBSUBMANAGER_H
 #define QXMPPPUBSUBMANAGER_H
 
+#include "QXmppClient.h"
 #include "QXmppClientExtension.h"
 #include "QXmppMessage.h"
 #include "QXmppPubSubIq.h"
 
-class QXmppPubSubManagerPrivate;
+#include <QFuture>
+#include <QFutureWatcher>
 
-///
-/// \brief The QXmppPubSubManager aims to provide publish-subscribe
-/// functionality as specified in \xep{0060}: Publish-Subscribe (PubSub).
-///
-/// However, it currently only supports a few PubSub use cases but all of the
-/// \xep{0060}: Personal Eventing Protocol (PEP) ones. PEP allows
-/// a standard XMPP user account to function as a virtual PubSub service.
-///
-/// To make use of this manager, you need to instantiate it and load it into
-/// the QXmppClient instance as follows:
-///
-/// \code
-/// QXmppPubSubManager *manager = new QXmppPubSubManager;
-/// client->addExtension(manager);
-/// \endcode
-///
-/// \note To subscribe to PEP event notifications use the \ref QXmppClientExtension#discoveryFeatures
-/// method of your client extension according to section 9.2 of XEP-0060. For example:
-/// \code
-/// QStringList YourExtension::discoveryFeatures() const
-/// {
-///    return QStringList() << "http://jabber.org/protocol/tune+notify";
-/// }
-/// \endcode
-///
-/// \ingroup Managers
-///
-/// \since QXmpp 1.4
-///
+class QXmppPubSubManagerPrivate;
+class QXmppPubSubPublishOptions;
+
 class QXMPP_EXPORT QXmppPubSubManager : public QXmppClientExtension
 {
     Q_OBJECT
 
 public:
+    /// Moin moin
+    using Result = std::variant<std::monostate, QXmppStanza::Error, QXmpp::PacketState>;
+    using InstantNodeResult = std::variant<QString, QXmppStanza::Error, QXmpp::PacketState>;
+    using PublishItemResult = std::variant<QString, QXmppStanza::Error, QXmpp::PacketState>;
+    using PublishItemsResult = std::variant<QStringList, QXmppStanza::Error, QXmpp::PacketState>;
+    template<typename T>
+    using ItemResult = std::variant<std::optional<T>, QXmppStanza::Error, QXmpp::PacketState>;
+    template<typename T>
+    using ItemsResult = std::variant<QList<T>, QXmppStanza::Error, QXmpp::PacketState>;
+
+    QXmppPubSubManager();
+    ~QXmppPubSubManager();
+
     // PEP-specific (the PubSub service is the current account)
-    QString createPepNode(const QString &nodeName);
-    QString deletePepNode(const QString &nodeName);
-    QString publishPepItem(const QString &nodeName, const QXmppPubSubItem &item);
-    QString publishPepItem(const QString &nodeName, const QXmppPubSubItem &item, const QXmppDataForm &publishOptions);
-    QString publishPepItems(const QString &nodeName, const QList<QXmppPubSubItem> &items);
-    QString publishPepItems(const QString &nodeName, const QList<QXmppPubSubItem> &items, const QXmppDataForm &publishOptions);
-    QString retractPepItem(const QString &nodeName, const QString &itemId);
+    QFuture<Result> createPepNode(const QString &nodeName);
+    QFuture<Result> deletePepNode(const QString &nodeName);
+    template<typename T>
+    QFuture<PublishItemResult> publishPepItem(const QString &nodeName, const QXmppPubSubItem &item);
+    template<typename T>
+    QFuture<PublishItemResult> publishPepItem(const QString &nodeName, const QXmppPubSubItem &item, const QXmppPubSubPublishOptions &publishOptions);
+    template<typename T>
+    QFuture<PublishItemsResult> publishPepItems(const QString &nodeName, const QList<QXmppPubSubItem> &items);
+    template<typename T>
+    QFuture<PublishItemsResult> publishPepItems(const QString &nodeName, const QList<QXmppPubSubItem> &items, const QXmppPubSubPublishOptions &publishOptions);
+    QFuture<Result> retractPepItem(const QString &nodeName, const QString &itemId);
+    QFuture<Result> purgePepItems(const QString &nodeName);
 
     // Generic PubSub (the PubSub service is the given entity)
-    QString createNode(const QString &jid, const QString &nodeName);
-    QString deleteNode(const QString &jid, const QString &nodeName);
-    QString publishItem(const QString &jid, const QString &nodeName, const QXmppPubSubItem &item);
-    QString publishItem(const QString &jid, const QString &nodeName, const QXmppPubSubItem &item, const QXmppDataForm &publishOptions);
-    QString publishItems(const QString &jid, const QString &nodeName, const QList<QXmppPubSubItem> &items);
-    QString publishItems(const QString &jid, const QString &nodeName, const QList<QXmppPubSubItem> &items, const QXmppDataForm &publishOptions);
-    QString retractItem(const QString &jid, const QString &nodeName, const QString &itemId);
-    QString requestItem(const QString &jid, const QString &nodeName, const QString &itemId);
-    QString requestItems(const QString &jid, const QString &nodeName);
-    QString requestItems(const QString &jid, const QString &nodeName, const QStringList &itemIds);
+    QFuture<Result> createNode(const QString &jid, const QString &nodeName);
+    QFuture<InstantNodeResult> createInstantNode(const QString &jid);
+    QFuture<Result> deleteNode(const QString &jid, const QString &nodeName);
+    template<typename T>
+    QFuture<ItemResult<T>> requestItem(const QString &jid, const QString &nodeName, const QString &itemId);
+    template<typename T>
+    QFuture<ItemsResult<T>> requestItems(const QString &jid, const QString &nodeName);
+    template<typename T>
+    QFuture<ItemsResult<T>> requestItems(const QString &jid, const QString &nodeName, const QStringList &itemIds);
+    template<typename T>
+    QFuture<PublishItemResult> publishItem(const QString &jid, const QString &nodeName, const T &items);
+    template<typename T>
+    QFuture<PublishItemResult> publishItem(const QString &jid, const QString &nodeName, const T &items, const QXmppPubSubPublishOptions &publishOptions);
+    template<typename T>
+    QFuture<PublishItemsResult> publishItems(const QString &jid, const QString &nodeName, const QList<T> &items);
+    template<typename T>
+    QFuture<PublishItemsResult> publishItems(const QString &jid, const QString &nodeName, const QList<T> &items, const QXmppPubSubPublishOptions &publishOptions);
+    QFuture<Result> retractItem(const QString &jid, const QString &nodeName, const QString &itemId);
+    QFuture<Result> purgeItems(const QString &jid, const QString &nodeName);
 
     /// \cond
     bool handleStanza(const QDomElement &element) override;
     /// \endcond
 
-signals:
-    ///
-    /// Emitted when a PubSub event notification arrives.
-    ///
-    /// \param &message
-    ///
-    void eventNotificationReceived(const QXmppMessage &message);
-
-    ///
-    /// Emitted when items are received after calling \ref QXmppPubSubManager#requestItems.
-    ///
-    /// \param &iq
-    ///
-    void itemsReceived(const QXmppPubSubIq &iq);
-
-    // QXmppClientExtension interface
-protected:
-    /// \cond
-    void setClient(QXmppClient *client) override;
-    /// \endcond
-
-private slots:
-    void _q_messageReceived(const QXmppMessage &message);
-
 private:
-    ///
-    /// This is here to allow adding attributes to the manager in the future
-    /// without breaking binary compatibility. Feel free to define QXmppPubSubManagerPrivate
-    /// when needed and remove this comment afterwards.
-    ///
-    QXmppPubSubManagerPrivate *d;
+    QFuture<PublishItemResult> publishItem(QXmppPubSubIqBase &&iq);
+    QFuture<PublishItemsResult> publishItems(QXmppPubSubIqBase &&iq);
+    static QXmppPubSubIq<> requestItemsIq(const QString &jid, const QString &nodeName, const QStringList &itemIds);
+
+    QScopedPointer<QXmppPubSubManagerPrivate> d;
 };
+
+template<typename T>
+auto QXmppPubSubManager::publishItem<T>(const QString &jid,
+                                        const QString &nodeName,
+                                        const T &item)
+    -> QFuture<PublishItemResult>
+{
+    QXmppPubSubIq<T> request;
+    request.setTo(jid);
+    request.setItems({item});
+    request.setQueryNode(nodeName);
+    return publishItem(std::move(request));
+}
+
+template<typename T>
+auto QXmppPubSubManager::publishItem<T>(const QString &jid,
+                                        const QString &nodeName,
+                                        const T &item,
+                                        const QXmppPubSubPublishOptions &publishOptions)
+    -> QFuture<PublishItemResult>
+{
+    QXmppPubSubIq<T> request;
+    request.setTo(jid);
+    request.setItems({item});
+    request.setQueryNode(nodeName);
+    request.setPublishOptions(publishOptions);
+    return publishItem(std::move(request));
+}
+
+template<typename T>
+auto QXmppPubSubManager::publishItems<T>(const QString &jid,
+                                         const QString &nodeName,
+                                         const QList<T> &items)
+    -> QFuture<PublishItemsResult>
+{
+    QXmppPubSubIq<T> request;
+    request.setTo(jid);
+    request.setItems(items);
+    request.setQueryNode(nodeName);
+    return publishItems(std::move(request));
+}
+
+template<typename T>
+auto QXmppPubSubManager::publishItems<T>(const QString &jid,
+                                         const QString &nodeName,
+                                         const QList<T> &items,
+                                         const QXmppPubSubPublishOptions &publishOptions)
+    -> QFuture<PublishItemsResult>
+{
+    QXmppPubSubIq<T> request;
+    request.setTo(jid);
+    request.setItems(items);
+    request.setQueryNode(nodeName);
+    request.setPublishOptions(publishOptions);
+    return publishItems(std::move(request));
+}
+
+template<typename T>
+auto QXmppPubSubManager::requestItem<T>(const QString &jid,
+                                        const QString &nodeName,
+                                        const QString &itemId)
+    -> QFuture<ItemResult<T>>
+{
+    QFutureInterface<ItemResult<T>> resultInterface(QFutureInterfaceBase::Started);
+
+    auto sendFuture = client()->sendIq(requestItemsIq(jid, nodeName, {itemId}));
+
+    auto *watcher = new QFutureWatcher<QXmppClient::IqResult>(this);
+    connect(watcher, &QFutureWatcherBase::finished, this, [=](){
+        auto result = watcher->result();
+        if (auto element = std::get_if<QDomElement>(&result)) {
+            if (QXmppPubSubIq<T>::isPubSubIq(*element)) {
+                // FIXME: could this still be an IQ of type error?
+                QXmppPubSubIq<T> resultIq;
+                resultIq.parse(*element);
+
+                if (resultIq.items().isEmpty()) {
+                    resultInterface.reportResult(std::nullopt);
+                } else {
+                    resultInterface.reportResult(resultIq.items().at(0));
+                }
+                resultInterface.reportFinished();
+            } else {
+                QXmppIq iq;
+                iq.parse(*element);
+                resultInterface.reportResult(iq.error());
+            }
+        } else if (const auto *error = std::get_if<QXmpp::PacketState>(&result)) {
+            resultInterface.reportResult(*error);
+            resultInterface.reportFinished();
+        }
+        watcher->deleteLater();
+    });
+    watcher->setFuture(sendFuture);
+
+    return resultInterface.future();
+}
+
+template<typename T>
+auto QXmppPubSubManager::requestItems<T>(const QString &jid,
+                                         const QString &nodeName)
+    -> QFuture<ItemsResult<T>>
+{
+    return requestItems<T>(jid, nodeName, {});
+}
+
+template<typename T>
+auto QXmppPubSubManager::requestItems<T>(const QString &jid,
+                                         const QString &nodeName,
+                                         const QStringList &itemIds)
+    -> QFuture<ItemsResult<T>>
+{
+    QFutureInterface<ItemsResult<T>> resultInterface(QFutureInterfaceBase::Started);
+
+    auto sendFuture = client()->sendIq(requestItemsIq(jid, nodeName, itemIds));
+
+    auto *watcher = new QFutureWatcher<QXmppClient::IqResult>(this);
+    connect(watcher, &QFutureWatcherBase::finished, this, [=](){
+        auto result = watcher->result();
+        if (auto element = std::get_if<QDomElement>(&result)) {
+            if (QXmppPubSubIq<T>::isPubSubIq(*element)) {
+                // FIXME: could this still be an IQ of type error?
+                QXmppPubSubIq<T> resultIq;
+                resultIq.parse(*element);
+                resultInterface.reportResult(resultIq.items());
+                resultInterface.reportFinished();
+            } else {
+                QXmppIq iq;
+                iq.parse(*element);
+
+                // invalid server response
+            }
+        } else if (const auto *error = std::get_if<QXmpp::PacketState>(&result)) {
+            resultInterface.reportResult(*error);
+            resultInterface.reportFinished();
+        }
+        watcher->deleteLater();
+    });
+    watcher->setFuture(sendFuture);
+
+    return resultInterface.future();
+}
 
 #endif // QXMPPPUBSUBMANAGER_H
